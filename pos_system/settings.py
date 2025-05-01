@@ -56,12 +56,22 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-STATIC_URL = '/static/'
+# Add to MIDDLEWARE (must be after SecurityMiddleware and before other middleware)
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # <-- Add this
+    # ... rest of your middleware ...
+]
 
+# Static files configuration (update these)
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # <-- Add this
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'pos_system', 'static'),
 ]
 
+# Whitenoise compression and caching
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesFilesStorage'  # <-- Add this
 
 ROOT_URLCONF = 'pos_system.urls'
 
