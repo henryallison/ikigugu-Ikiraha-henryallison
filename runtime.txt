@@ -2,3 +2,4 @@ python-3.9.18
 # Add these to your existing requirements:
 gunicorn==21.2.0
 whitenoise==6.6.0  # For static file serving
+whitenoise==6.6.0
