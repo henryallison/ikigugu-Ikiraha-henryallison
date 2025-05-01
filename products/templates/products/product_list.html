@@ -1,0 +1,92 @@
+{% extends 'products/dashboard.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Product List</h2>
+
+    <form method="get" class="mb-3 d-flex justify-content-center">
+        <div class="input-group" style="max-width: 500px; width: 100%;">
+            <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search by name or category">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+
+    {% if request.GET.q %}
+        <div class="text-center mb-3">
+            <a href="{% url 'product-list' %}" class="btn btn-outline-secondary">Clear Search</a>
+        </div>
+    {% endif %}
+<a href="{% url 'product-create' %}" class="btn btn-success">Add Product</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.category }}</td>
+                <td>{{ product.price }}</td>
+                <td>
+    {% if product.quantity <= 0 %}
+        <span class="badge bg-danger">Out of Stock</span>
+    {% else %}
+        {{ product.quantity }}
+        {% if product.quantity <= 5 %}
+            <span class="badge bg-danger ms-2">Low</span>
+        {% endif %}
+    {% endif %}
+</td>
+
+                <td>
+                    {% if product.description|length > 60 %}
+                        <span class="short-text">{{ product.description|slice:":60" }}...</span>
+                        <span class="full-text d-none">{{ product.description }}</span>
+                        <a href="#" class="toggle-description btn btn-sm btn-link">View More</a>
+                    {% else %}
+                        {{ product.description }}
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'product-edit' product.pk %}" class="btn btn-warning btn-sm">Edit</a>
+                    <a href="{% url 'product-delete' product.pk %}" class="btn btn-danger btn-sm">Delete</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">No products available.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const toggles = document.querySelectorAll(".toggle-description");
+
+        toggles.forEach(function (toggle) {
+            toggle.addEventListener("click", function (e) {
+                e.preventDefault();
+                const shortText = this.previousElementSibling.previousElementSibling;
+                const fullText = this.previousElementSibling;
+
+                if (fullText.classList.contains("d-none")) {
+                    fullText.classList.remove("d-none");
+                    shortText.classList.add("d-none");
+                    this.textContent = "View Less";
+                } else {
+                    fullText.classList.add("d-none");
+                    shortText.classList.remove("d-none");
+                    this.textContent = "View More";
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,229 @@
+{% extends 'products/dashboard.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ title }}</h2>
+    <form method="post" id="saleForm">
+        {% csrf_token %}
+
+        <!-- Customer Info -->
+        <h4>Customer Information</h4>
+        {{ customer_form.non_field_errors }}
+        {% for field in customer_form %}
+            <div class="mb-3">
+                {{ field.label_tag }} {{ field }} {{ field.errors }}
+            </div>
+        {% endfor %}
+
+        <!-- Payment -->
+        <h4>Payment Method</h4>
+        {{ sale_form.non_field_errors }}
+        {% for field in sale_form %}
+            <div class="mb-3">
+                {{ field.label_tag }} {{ field }} {{ field.errors }}
+            </div>
+        {% endfor %}
+
+        <!-- Products -->
+        <h4>Products</h4>
+        <div id="formset-container">
+            {{ formset.management_form }}
+            {% for form in formset %}
+                <div class="card mb-3 p-3 product-form">
+                    {% for field in form %}
+    {% if field.name in 'id DELETE sale' %}
+        <div style="display: none;">
+            {{ field }}
+        </div>
+    {% else %}
+        <div class="mb-2">
+            {{ field.label_tag }} {{ field }} {{ field.errors }}
+        </div>
+    {% endif %}
+{% endfor %}
+
+                    <button type="button" class="btn btn-danger btn-sm remove-product">Remove</button>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Hidden empty form for cloning -->
+        <div id="empty-form-template" style="display:none;">
+            <div class="card mb-3 p-3 product-form">
+                {% for field in formset.empty_form %}
+    {% if field.name in 'id DELETE sale' %}
+        <div style="display: none;">
+            {{ field|safe }}
+        </div>
+    {% else %}
+        <div class="mb-2">
+            {{ field.label_tag|safe }} {{ field|safe }}
+        </div>
+    {% endif %}
+{% endfor %}
+
+                <button type="button" class="btn btn-danger btn-sm remove-product">Remove</button>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-primary my-3" id="add-product">Add Product</button>
+
+        <!-- Buttons -->
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-success">Confirm Payment</button>
+            <button type="button" class="btn btn-info" onclick="calculateTotal()">Calculate Total</button>
+            <a href="{% url 'product-list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+
+    <!-- Totals -->
+    <div class="mt-4" id="totals" style="display: none;">
+        <h5>Total Summary</h5>
+        <p><strong>Total Products Price:</strong> <span id="total_price">0.00</span> RWF</p>
+        <p><strong>Total Tax (2%):</strong> <span id="tax">0.00</span> RWF</p>
+        <p><strong>Final Amount:</strong> <span id="final_amount">0.00</span> RWF</p>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script>
+function calculateTotal() {
+    let totalPrice = 0.0;
+    let hasError = false;
+    const productSelections = new Map();
+
+    const cards = document.querySelectorAll('.product-form:not(.demo-form)');
+    cards.forEach(card => {
+        const productSelect = card.querySelector('select');
+        const quantityInput = card.querySelector('input[type="number"]');
+
+        if (productSelect && quantityInput) {
+            const selectedOption = productSelect.options[productSelect.selectedIndex];
+            const productName = selectedOption.text;
+            const productPrice = parseFloat(selectedOption.text.match(/Price: ([\d.]+)/)?.[1]) || 0;
+            const maxQty = parseInt(selectedOption.text.match(/Stock: (\d+)/)?.[1]) || 0;
+            const quantity = parseInt(quantityInput.value) || 0;
+
+            if (!selectedOption.value) return; // Skip if no product selected
+
+            // ✅ Prevent selection of product with 0 stock
+            if (maxQty < 1) {
+                alert(`"${productName}" is out of stock and cannot be selected.`);
+                hasError = true;
+                return;
+            }
+
+            if (quantity <= 0) {
+                alert(`Quantity for "${productName}" must be greater than 0.`);
+                hasError = true;
+                return;
+            }
+
+            if (quantity > maxQty) {
+                alert(`We only have ${maxQty} available for "${productName}". Please reduce the quantity.`);
+                hasError = true;
+                return;
+            }
+
+            const previousQty = productSelections.get(selectedOption.value) || 0;
+            if (previousQty + quantity > maxQty) {
+                alert(`Total quantity for "${productName}" exceeds available stock (${maxQty}).`);
+                hasError = true;
+                return;
+            }
+
+            productSelections.set(selectedOption.value, previousQty + quantity);
+            totalPrice += productPrice * quantity;
+        }
+    });
+
+    if (hasError) return;
+
+    const tax = totalPrice * 0.02;
+    const finalAmount = totalPrice + tax;
+
+    document.getElementById("total_price").textContent = totalPrice.toFixed(2);
+    document.getElementById("tax").textContent = tax.toFixed(2);
+    document.getElementById("final_amount").textContent = finalAmount.toFixed(2);
+    document.getElementById("totals").style.display = "block";
+}
+
+function getSelectedProductValues() {
+    const selectedValues = [];
+    document.querySelectorAll('.product-form:not(.demo-form) select').forEach(select => {
+        if (select.value) {
+            selectedValues.push(select.value);
+        }
+    });
+    return selectedValues;
+}
+
+// ✅ Updated to disable out-of-stock products too
+function updateProductSelectOptions() {
+    const selectedValues = getSelectedProductValues();
+    document.querySelectorAll('.product-form:not(.demo-form) select').forEach(select => {
+        Array.from(select.options).forEach(option => {
+            const stockMatch = option.text.match(/Stock: (\d+)/);
+            const stock = stockMatch ? parseInt(stockMatch[1]) : 0;
+
+            if (option.value && (selectedValues.includes(option.value) && option.value !== select.value)) {
+                option.disabled = true;
+            } else if (stock < 1) {
+                // Disable option if stock is less than 1
+                option.disabled = true;
+            } else {
+                option.disabled = false;
+            }
+        });
+    });
+}
+
+
+// Dynamic form handling
+document.addEventListener('DOMContentLoaded', function () {
+    const formsetContainer = document.getElementById('formset-container');
+    const addProductBtn = document.getElementById('add-product');
+    const emptyFormTemplate = document.getElementById('empty-form-template').innerHTML;
+    const totalForms = document.querySelector('[name="{{ formset.prefix }}-TOTAL_FORMS"]');
+
+    addProductBtn.addEventListener('click', function () {
+        let formIndex = parseInt(totalForms.value);
+        let newFormHtml = emptyFormTemplate.replace(/__prefix__/g, formIndex);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = newFormHtml;
+        formsetContainer.appendChild(tempDiv.firstElementChild);
+        totalForms.value = formIndex + 1;
+        updateProductSelectOptions();
+    });
+
+    formsetContainer.addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-product')) {
+            const productForms = formsetContainer.querySelectorAll('.product-form');
+            if (productForms.length > 1) {
+                e.target.closest('.product-form').remove();
+
+                // Re-index forms after removal
+                const updatedForms = formsetContainer.querySelectorAll('.product-form');
+                updatedForms.forEach((form, index) => {
+                    form.querySelectorAll('input, select, label').forEach(el => {
+                        if (el.name) el.name = el.name.replace(/form-\d+-/, `form-${index}-`);
+                        if (el.id) el.id = el.id.replace(/form-\d+-/, `form-${index}-`);
+                        if (el.htmlFor) el.htmlFor = el.htmlFor.replace(/form-\d+-/, `form-${index}-`);
+                    });
+                });
+                totalForms.value = updatedForms.length;
+                updateProductSelectOptions();
+            }
+        }
+    });
+
+    // Prevent duplicate selection
+    formsetContainer.addEventListener('change', function (e) {
+        if (e.target.tagName === 'SELECT') {
+            updateProductSelectOptions();
+        }
+    });
+});
+</script>
+
+
+{% endblock %}

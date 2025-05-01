@@ -1,0 +1,83 @@
+{% extends 'products/dashboard.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Sales History</h2>
+
+    <form method="get" class="mb-3 d-flex justify-content-center">
+        <div class="input-group" style="max-width: 500px; width: 100%;">
+            <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search by customer or date">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+
+    {% if request.GET.q %}
+        <div class="text-center mb-3">
+            <a href="{% url 'sales-history' %}" class="btn btn-outline-secondary">Clear Search</a>
+        </div>
+    {% endif %}
+{% if messages %}
+  {% for message in messages %}
+    <div style="padding: 10px; margin-bottom: 10px; border-radius: 5px; background-color: {% if message.tags == 'success' %}#d4edda{% else %}#f8d7da{% endif %}; color: {% if message.tags == 'success' %}#155724{% else %}#721c24{% endif %};">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+    {% for sale in sales %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <strong>Sale #{{ sale.id }}</strong> — {{ sale.created_at|date:"Y-m-d H:i" }}
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Customer Information</h5>
+                <p><strong>Name:</strong> {{ sale.customer.name }}</p>
+                <p><strong>Location:</strong> {{ sale.customer.location }}</p>
+                <p><strong>Phone:</strong> {{ sale.customer.phone }}</p>
+                <p><strong>Email:</strong> {{ sale.customer.email }}</p>
+
+                <hr>
+
+                <h5 class="card-title">Sale Details</h5>
+                <p><strong>Payment Method:</strong> {{ sale.get_payment_method_display }}</p>
+                <p><strong>Total Amount:</strong> {{ sale.total_amount }} RWF</p>
+                <p><strong>Tax:</strong> {{ sale.tax }} RWF</p>
+                <p><strong>Final Amount:</strong> <span class="text-success">{{ sale.final_amount }} RWF</span></p>
+
+                <hr>
+
+                <h5 class="card-title">Items Purchased</h5>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Price (each)</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in sale.items.all %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ item.product.name }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.price }} RWF</td>
+                            <td>{{ item.subtotal }} RWF</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="mt-3 d-flex gap-2">
+                    <a href="{% url 'sale-delete' sale.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
+                    <a href="{% url 'sale-print' sale.id %}" class="btn btn-secondary btn-sm" target="_blank">Print</a>
+                    <a href="{% url 'sale-email' sale.id %}" class="btn btn-primary btn-sm">Email</a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="text-center">No sales recorded yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

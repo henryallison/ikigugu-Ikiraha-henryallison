@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Sales Receipt</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #333;">
+    <h2 style="text-align:center;">LIB POS App - Sales Receipt</h2>
+
+    <p><strong>Customer Name:</strong> {{ customer.name }}</p>
+    <p><strong>Location:</strong> {{ customer.location }}</p>
+    <p><strong>Phone:</strong> {{ customer.phone }}</p>
+    <p><strong>Date:</strong> {{ sale.created_at|date:"F j, Y, g:i a" }}</p>
+    <p><strong>Payment Method:</strong> {{ sale.payment_method }}</p>
+
+    <hr>
+    <table border="1" cellpadding="6" cellspacing="0" style="width:100%; border-collapse: collapse;">
+        <thead style="background-color: #f2f2f2;">
+            <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Price (RWF)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.product.price }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p><strong>Total:</strong> {{ sale.total_amount }} RWF</p>
+    <p><strong>Tax (2%):</strong> {{ tax }} RWF</p>
+    <p><strong>Final Amount:</strong> {{ final_amount }} RWF</p>
+
+    <p style="text-align:center; margin-top:30px;">Thank you for shopping with us!</p>
+<p style="text-align:center; margin-top:30px;">Feel free to contact us on: +250790878665 or hyallison5050@gmail.com</p>
+</body>
+</html>

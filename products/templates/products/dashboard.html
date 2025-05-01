@@ -1,0 +1,130 @@
+{% load custom_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            width: 240px;
+            min-height: 100vh;
+            background-color: #343a40;
+        }
+        .sidebar h4 {
+            color: #fff;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #495057;
+        }
+        .sidebar .nav-link {
+            color: #adb5bd;
+        }
+        .sidebar .nav-link.active,
+        .sidebar .nav-link:hover {
+            background-color: #495057;
+            color: #fff;
+            border-radius: 0.375rem;
+        }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+    <!-- Sidebar -->
+    <div class="sidebar p-4 text-white">
+    <h4 class="text-center">POS Admin</h4>
+    <ul class="nav flex-column mt-4">
+        <li class="nav-item">
+            <a class="nav-link {% active_class request '^/dashboard/$' %}" href="{% url 'dashboard' %}">Dashboard</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% active_class request '^/products/?' %}" href="{% url 'product-list' %}">Products</a>
+        </li>
+
+        <!-- 🔽 New Sale Link -->
+        <li class="nav-item">
+            <a class="nav-link {% active_class request '^/products/sale/new/?' %}" href="{% url 'create-sale' %}">New Sale</a>
+        </li>
+
+        <!-- ✅ Sales History Link -->
+        <li class="nav-item">
+            <a class="nav-link {% active_class request '^/products/sales/?' %}" href="{% url 'sales-history' %}">Sales History</a>
+        </li>
+
+        {% if request.user.is_superuser %}
+        <li class="nav-item">
+            <a class="nav-link {% active_class request '^/admin-users/?' %}" href="{% url 'admin-user-list' %}">Manage Admin</a>
+        </li>
+        {% endif %}
+
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'admin-logout' %}">Logout</a>
+        </li>
+    </ul>
+</div>
+
+
+   <!-- Main content -->
+<div class="p-5 flex-grow-1 w-100">
+    {% block content %}
+    <div class="bg-white rounded shadow p-5">
+        <h2 class="text-2xl font-bold mb-3">Welcome, {{ request.user.get_full_name|default:request.user.username }}</h2>
+        <p class="text-gray-600 mb-5 text-lg">This is your <strong>LIB POS App</strong> dashboard. Below is an overview of what you can do in the system depending on your role.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- Super Admin Capabilities -->
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg shadow-sm">
+                <h3 class="text-xl font-semibold text-blue-700 mb-2">👑 Super Admin Capabilities</h3>
+                <ul class="list-disc list-inside text-gray-700">
+                    <li>📦 <strong>Product Management:</strong> Create, update, and delete products with details like name, price, and description.</li>
+                    <li>🧾 <strong>Sales Processing:</strong> Add products to customer orders, set quantities, apply tax, and confirm transactions.</li>
+                    <li>📤 <strong>Send Receipts:</strong> Automatically generate and email PDF-like receipts to customers after every sale.</li>
+                    <li>📉 <strong>Low Stock Warning:</strong> Get alerts for products running low on stock.</li>
+                    <li>📜 <strong>Sales History:</strong> View all sales made, including customer details, product quantities, and timestamps.</li>
+                    <li>👥 <strong>Admin Management:</strong> Add, update, or remove admin users in the system (stored in the `auth_user` table).</li>
+                    <li>📊 <strong>Dashboard Analytics:</strong> Get a quick overview of recent sales and system activity.</li>
+                </ul>
+            </div>
+
+            <!-- Regular Admin/User Capabilities -->
+            <div class="bg-green-50 border-l-4 border-green-400 p-4 rounded-lg shadow-sm">
+                <h3 class="text-xl font-semibold text-green-700 mb-2">🔐 Regular Admin/User Capabilities</h3>
+                <ul class="list-disc list-inside text-gray-700">
+                    <li>🛒 <strong>Make Sales:</strong> Process new customer orders by selecting products and entering quantities.</li>
+                    <li>🧮 <strong>Auto Billing:</strong> System calculates total amount, applies tax, and generates the final bill.</li>
+                    <li>📬 <strong>Send Receipts:</strong> Email a professional receipt to the customer's email after each transaction.</li>
+                    <li>📄 <strong>View Sales History:</strong> See a list of sales you’ve processed and access details for each.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">🧭 How to Use the System</h3>
+            <ol class="list-decimal list-inside text-gray-700">
+                <li><strong>Login:</strong> Use your assigned credentials to log in.</li>
+                <li><strong>Navigate:</strong> Use the sidebar to access Products, Sales, Admins, and Sales History.</li>
+                <li><strong>Manage Products:</strong> Add or edit products to keep inventory up to date.</li>
+                <li><strong>Make a Sale:</strong> Go to the "New Sale" section, select products and quantities, and complete the sale.</li>
+                <li><strong>Send Receipt:</strong> After sale confirmation, email the receipt directly from the sales detail page.</li>
+                <li><strong>Track Sales:</strong> Use the Sales History page to view past sales, including details and receipt links.</li>
+                <li><strong>Super Admin Only:</strong> Manage other admin users from the “Admin” section in the sidebar.</li>
+            </ol>
+        </div>
+
+        <div class="mt-8 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+            <h4 class="text-yellow-800 font-semibold">🌍 System Time Zone</h4>
+            <p class="text-gray-700">The system is currently set to <strong>Africa/Kigali</strong> time for accurate transaction timestamps.</p>
+        </div>
+    </div>
+    {% endblock %}
+</div>
+
+</div>
+</body>
+</html>
