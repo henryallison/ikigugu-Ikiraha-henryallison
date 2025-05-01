@@ -12,11 +12,14 @@ fi
 # Upgrade pip and setuptools first (essential for Render)
 pip install --upgrade pip setuptools wheel
 
-# Install requirements with modern resolver but allow downgrades
+# Install production requirements including Gunicorn
 pip install \
   --no-cache-dir \
   --upgrade-strategy only-if-needed \
   -r requirements.txt
+
+# Ensure Gunicorn is installed (critical for Render)
+pip install gunicorn==21.2.0
 
 # Special handling for numpy and related packages
 if [ "$PYTHON_VERSION" == "3.9" ]; then
@@ -27,12 +30,19 @@ else
   pip install "numpy>=1.23.0" "scipy>=1.9.0" "scikit-learn>=1.2.0"
 fi
 
-# Verify installed versions
-echo "=== Installed Package Versions ==="
-pip freeze | grep -E 'numpy|scipy|scikit-learn|Django'
+# Verify critical installations
+echo "=== Verifying Critical Packages ==="
+if ! command -v gunicorn &> /dev/null; then
+  echo "ERROR: Gunicorn installation failed!"
+  exit 1
+fi
 
-# Convert static asset files
+pip freeze | grep -E 'numpy|scipy|scikit-learn|Django|gunicorn'
+
+# Convert static asset files with Whitenoise support
 python manage.py collectstatic --no-input
 
 # Apply any outstanding database migrations
 python manage.py migrate
+
+echo "=== Build completed successfully ==="
