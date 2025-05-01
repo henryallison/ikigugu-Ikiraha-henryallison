@@ -2,34 +2,34 @@
 # Exit on error
 set -o errexit
 
-# Ensure Python 3.9 is used (recommended for your requirements)
+# Check Python version and warn if not 3.9 (but continue anyway)
 PYTHON_VERSION=$(python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 if [ "$PYTHON_VERSION" != "3.9" ]; then
   echo "Warning: Recommended Python version is 3.9 (found $PYTHON_VERSION)"
+  echo "Render uses Python 3.11 by default - we'll install compatible package versions"
 fi
 
-# Create and activate virtual environment (if not already in one)
-if [ -z "$VIRTUAL_ENV" ]; then
-  python -m venv venv
-  source venv/bin/activate  # Linux/Mac
-  # OR for Windows: source venv/Scripts/activate
-fi
+# Upgrade pip and setuptools first (essential for Render)
+pip install --upgrade pip setuptools wheel
 
-# Upgrade pip and setuptools first
-pip install --upgrade pip setuptools
-
-# Install requirements with legacy resolver for better dependency resolution
+# Install requirements with modern resolver but allow downgrades
 pip install \
-  --use-deprecated=legacy-resolver \
   --no-cache-dir \
+  --upgrade-strategy only-if-needed \
   -r requirements.txt
 
-# Install specific compatible versions of problematic packages
-pip install "numpy==1.21.6" "scipy==1.7.3" "scikit-learn==1.0.2"
+# Special handling for numpy and related packages
+if [ "$PYTHON_VERSION" == "3.9" ]; then
+  # If Python 3.9, install exact versions
+  pip install "numpy==1.21.6" "scipy==1.7.3" "scikit-learn==1.0.2"
+else
+  # For Python 3.11 (Render's default), install compatible versions
+  pip install "numpy>=1.23.0" "scipy>=1.9.0" "scikit-learn>=1.2.0"
+fi
 
 # Verify installed versions
-echo "Verifying installed packages:"
-pip freeze | grep -E 'numpy|scipy|scikit-learn'
+echo "=== Installed Package Versions ==="
+pip freeze | grep -E 'numpy|scipy|scikit-learn|Django'
 
 # Convert static asset files
 python manage.py collectstatic --no-input
